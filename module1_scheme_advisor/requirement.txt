@@ -1,4 +1,4 @@
-# Module 3: Government Scheme Advisor - Dependencies
+# Module 1: Government Scheme Advisor - Dependencies
 
 # Core RAG Framework
 langchain==0.1.0
