@@ -1,0 +1,18 @@
+# Environment variables
+.env
+module1_scheme_advisor/.env
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Virtual environment
+venv/
+
+# VS Code settings
+.vscode/
+
+# Jupyter
+.ipynb_checkpoints/
+
+.env

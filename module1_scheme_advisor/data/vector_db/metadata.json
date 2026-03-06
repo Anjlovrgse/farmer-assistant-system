@@ -1,9 +1,9 @@
 {
-    "num_chunks": 20,
+    "num_chunks": 704,
     "embedding_model": "all-MiniLM-L6-v2",
     "embedding_dimension": 384,
     "chunk_size": 500,
     "chunk_overlap": 50,
-    "total_characters": 9039,
+    "total_characters": 330477,
     "index_type": "IndexFlatL2"
 }

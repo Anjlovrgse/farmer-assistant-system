@@ -13,6 +13,9 @@ from sentence_transformers import SentenceTransformer
 import faiss
 from dotenv import load_dotenv
 import sys
+import sqlite3
+from datetime import datetime
+from werkzeug.security import generate_password_hash, check_password_hash
 
 # Try to import Groq
 try:
@@ -34,7 +37,9 @@ CORS(app)  # Enable CORS for frontend
 # =============================================
 # CONFIGURATION
 # =============================================
-VECTOR_DB_PATH = "../data/vector_db/"
+# Base directory of this script
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+VECTOR_DB_PATH = os.path.join(BASE_DIR, "../data/vector_db/")
 EMBEDDINGS_MODEL = "all-MiniLM-L6-v2"
 TOP_K = 3
 
@@ -136,7 +141,52 @@ def initialize_rag_system():
         initialization_errors.append(error_msg)
         return False
 
+def init_db():
+    """Initialize SQLite database for search history and users"""
+    try:
+        os.makedirs(os.path.dirname(VECTOR_DB_PATH), exist_ok=True)
+        db_path = os.path.join(os.path.dirname(VECTOR_DB_PATH), 'search_history.db')
+        conn = sqlite3.connect(db_path)
+        c = conn.cursor()
+        
+        # Create users table
+        c.execute('''CREATE TABLE IF NOT EXISTS users
+                     (id INTEGER PRIMARY KEY AUTOINCREMENT,
+                      username TEXT UNIQUE NOT NULL,
+                      password_hash TEXT NOT NULL,
+                      created_at TEXT)''')
+                      
+        # Create history table
+        c.execute('''CREATE TABLE IF NOT EXISTS history
+                     (id INTEGER PRIMARY KEY AUTOINCREMENT,
+                      timestamp TEXT,
+                      user_id INTEGER,
+                      question TEXT,
+                      answer TEXT,
+                      llm_used BOOLEAN,
+                      FOREIGN KEY(user_id) REFERENCES users(id))''')
+                      
+        conn.commit()
+        conn.close()
+        print("   ✅ SQLite database (users & history) initialized")
+    except Exception as e:
+        print(f"   ⚠️  Could not initialize database: {e}")
+
+def save_to_history(user_id, question, answer, llm_used):
+    """Save a search query and answer to the database"""
+    try:
+        db_path = os.path.join(os.path.dirname(VECTOR_DB_PATH), 'search_history.db')
+        conn = sqlite3.connect(db_path)
+        c = conn.cursor()
+        c.execute("INSERT INTO history (timestamp, user_id, question, answer, llm_used) VALUES (?, ?, ?, ?, ?)",
+                  (datetime.now().isoformat(), user_id, question, answer, llm_used))
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        print(f"Error saving history: {e}")
+
 # Initialize on startup
+init_db()
 rag_ready = initialize_rag_system()
 
 # =============================================
@@ -245,8 +295,11 @@ def home():
         "endpoints": {
             "/": "GET - API information",
             "/health": "GET - Health check",
-            "/ask": "POST - Ask a question (body: {\"question\": \"...\"})",
+            "/register": "POST - Create a new user account",
+            "/login": "POST - Login via username and password",
+            "/ask": "POST - Ask a question (body: {\"question\": \"...\", \"user_id\": 1})",
             "/search": "POST - Search only (body: {\"query\": \"...\"})",
+            "/history": "GET - Get search history logs",
             "/stats": "GET - Database statistics"
         },
         "documentation": "Send POST to /ask with JSON: {\"question\": \"What is PM-KISAN?\"}"
@@ -274,6 +327,77 @@ def health():
     
     status_code = 200 if rag_ready else 503
     return jsonify(health_status), status_code
+
+@app.route('/register', methods=['POST'])
+def register():
+    """Register a new user account"""
+    data = request.get_json()
+    if not data or 'username' not in data or 'password' not in data:
+        return jsonify({"success": False, "error": "Missing username or password"}), 400
+        
+    username = data['username'].strip()
+    password = data['password'].strip()
+    
+    if len(username) < 3 or len(password) < 4:
+        return jsonify({"success": False, "error": "Username must be > 3 chars and password > 4 chars"}), 400
+        
+    try:
+        db_path = os.path.join(os.path.dirname(VECTOR_DB_PATH), 'search_history.db')
+        conn = sqlite3.connect(db_path)
+        c = conn.cursor()
+        
+        # Check if username exists
+        c.execute("SELECT id FROM users WHERE username = ?", (username,))
+        if c.fetchone():
+            return jsonify({"success": False, "error": "Username already taken"}), 409
+            
+        hashed_pw = generate_password_hash(password)
+        c.execute("INSERT INTO users (username, password_hash, created_at) VALUES (?, ?, ?)",
+                  (username, hashed_pw, datetime.now().isoformat()))
+        conn.commit()
+        user_id = c.lastrowid
+        conn.close()
+        
+        return jsonify({
+            "success": True, 
+            "message": "Registration successful",
+            "user": {"id": user_id, "username": username}
+        }), 201
+        
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+@app.route('/login', methods=['POST'])
+def login():
+    """Authenticate a user"""
+    data = request.get_json()
+    if not data or 'username' not in data or 'password' not in data:
+        return jsonify({"success": False, "error": "Missing username or password"}), 400
+        
+    username = data['username'].strip()
+    password = data['password'].strip()
+    
+    try:
+        db_path = os.path.join(os.path.dirname(VECTOR_DB_PATH), 'search_history.db')
+        conn = sqlite3.connect(db_path)
+        conn.row_factory = sqlite3.Row
+        c = conn.cursor()
+        
+        c.execute("SELECT id, username, password_hash FROM users WHERE username = ?", (username,))
+        user = c.fetchone()
+        conn.close()
+        
+        if user and check_password_hash(user['password_hash'], password):
+            return jsonify({
+                "success": True, 
+                "message": "Login successful",
+                "user": {"id": user['id'], "username": user['username']}
+            }), 200
+        else:
+            return jsonify({"success": False, "error": "Invalid username or password"}), 401
+            
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
 
 @app.route('/ask', methods=['POST'])
 def ask():
@@ -306,6 +430,7 @@ def ask():
             }), 400
         
         question = data['question'].strip()
+        user_id = data.get('user_id') # Optional user ID
         
         if not question:
             return jsonify({
@@ -328,6 +453,9 @@ def ask():
         
         # Generate answer
         result = generate_answer(question, relevant_chunks)
+        
+        # Save to history database
+        save_to_history(user_id, question, result["answer"], result["llm_used"])
         
         # Prepare response
         response = {
@@ -385,6 +513,47 @@ def search():
             "count": len(results)
         }), 200
     
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+
+@app.route('/history', methods=['GET'])
+def get_history():
+    """
+    Get backend search history from database
+    """
+    try:
+        db_path = os.path.join(os.path.dirname(VECTOR_DB_PATH), 'search_history.db')
+        conn = sqlite3.connect(db_path)
+        conn.row_factory = sqlite3.Row
+        c = conn.cursor()
+        
+        # Get optional limit, default to 50
+        limit = request.args.get('limit', 50, type=int)
+        
+        c.execute("SELECT * FROM history ORDER BY timestamp DESC LIMIT ?", (limit,))
+        rows = c.fetchall()
+        
+        history = []
+        for row in rows:
+            history.append({
+                "id": row["id"],
+                "timestamp": row["timestamp"],
+                "question": row["question"],
+                "answer": row["answer"],
+                "llm_used": bool(row["llm_used"])
+            })
+            
+        conn.close()
+        
+        return jsonify({
+            "success": True,
+            "count": len(history),
+            "history": history
+        }), 200
+        
     except Exception as e:
         return jsonify({
             "success": False,
@@ -469,8 +638,11 @@ if __name__ == '__main__':
         print(f"\n🌐 API Endpoints:")
         print(f"   - GET  /         - API info")
         print(f"   - GET  /health   - Health check")
+        print(f"   - POST /register - Create user")
+        print(f"   - POST /login    - Authenticate user")
         print(f"   - POST /ask      - Ask questions")
         print(f"   - POST /search   - Search only")
+        print(f"   - GET  /history  - View search history")
         print(f"   - GET  /stats    - Statistics")
         print(f"\n🚀 Server running on: http://127.0.0.1:5000")
         print(f"   Press Ctrl+C to stop")

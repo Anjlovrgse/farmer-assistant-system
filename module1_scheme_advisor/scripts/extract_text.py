@@ -95,7 +95,7 @@ def main():
     os.makedirs(OUTPUT_FOLDER, exist_ok=True)
     
     # Your specific PDF files
-    target_pdfs = ["Farming Scemed.pdf", "farmerbook.pdf"]
+    target_pdfs = ["Farming Scemed.pdf", "farmerbook.pdf", "Cultivation.pdf", "Paddy_schemes.pdf"]
     
     print(f"Looking for PDFs in: {PDF_FOLDER}")
     print(f"Target files: {', '.join(target_pdfs)}\n")
@@ -265,5 +265,7 @@ if __name__ == "__main__":
     print("\n   Required files:")
     print("   - Farming Scemed.pdf")
     print("   - farmerbook.pdf")
+    print("   - Cultivation.pdf")
+    print("   - Paddy_schemes.pdf")
     print("\n   After placing files, run this script again!")
     print()

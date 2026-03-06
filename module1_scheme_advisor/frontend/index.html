@@ -1,422 +1,1599 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Government Scheme Advisor</title>
+    <title>Scheme Advisor AI - Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
+
+        :root {
+            --bg-color: #f7f9fa;
+            --sidebar-bg: #ffffff;
+            --right-panel-bg: #ffffff;
+            --text-dark: #1a1a1a;
+            --text-gray: #6b7280;
+            --border-color: #e5e7eb;
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --user-bubble: #2563eb;
+            --bot-bubble: #ffffff;
+            --success-green: #dcfce7;
+            --success-text: #166534;
+            --warning-bg: #111827;
+            --warning-text: #fef08a;
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 20px;
-        }
-
-        .container {
-            max-width: 900px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            background-color: var(--bg-color);
+            color: var(--text-dark);
+            height: 100vh;
             overflow: hidden;
-            height: 90vh;
             display: flex;
             flex-direction: column;
         }
 
-        .header {
-            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
-            color: white;
-            padding: 30px;
-            text-align: center;
-        }
-
-        .header h1 {
-            font-size: 2em;
-            margin-bottom: 10px;
-        }
-
-        .header p {
-            opacity: 0.9;
-        }
-
-        .chat-container {
-            flex: 1;
-            overflow-y: auto;
-            padding: 20px;
-            background: #f8f9fa;
-        }
-
-        .message {
-            margin-bottom: 20px;
+        /* --- Global Login Overlay --- */
+        #loginOverlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(17, 24, 39, 0.95);
             display: flex;
-            align-items: flex-start;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            transition: opacity 0.5s ease, visibility 0.5s ease;
         }
 
-        .message.user {
-            justify-content: flex-end;
-        }
-
-        .message-content {
-            max-width: 70%;
-            padding: 15px 20px;
-            border-radius: 15px;
-            line-height: 1.6;
-        }
-
-        .message.user .message-content {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border-bottom-right-radius: 5px;
-        }
-
-        .message.assistant .message-content {
+        .login-box {
             background: white;
-            color: #333;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            border-bottom-left-radius: 5px;
+            padding: 40px;
+            border-radius: 16px;
+            text-align: center;
+            width: 90%;
+            max-width: 400px;
         }
 
-        .message-icon {
-            width: 40px;
-            height: 40px;
+        .login-input {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 15px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            background: #f9fafb;
+            font-size: 14px;
+            outline: none;
+        }
+
+        .login-btn {
+            width: 100%;
+            padding: 12px;
+            border-radius: 8px;
+            border: none;
+            background: var(--primary);
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            margin-bottom: 15px;
+        }
+
+        .auth-toggle {
+            font-size: 14px;
+            color: var(--primary);
+            cursor: pointer;
+            text-decoration: underline;
+        }
+
+        .auth-error {
+            color: #ef4444;
+            font-size: 14px;
+            margin-bottom: 15px;
+            display: none;
+        }
+
+        /* --- Top Navigation Bar --- */
+        .navbar {
+            height: 64px;
+            background: white;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 24px;
+            flex-shrink: 0;
+            z-index: 50;
+        }
+
+        .nav-logo {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+        }
+
+        .logo-icon {
+            width: 32px;
+            height: 32px;
+            background: var(--primary);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 18px;
+        }
+
+        .nav-logo-text h1 {
+            font-size: 16px;
+            font-weight: 700;
+            color: #111827;
+        }
+
+        .nav-logo-text p {
+            font-size: 12px;
+            color: var(--text-gray);
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 30px;
+            height: 100%;
+        }
+
+        .nav-link {
+            text-decoration: none;
+            color: var(--text-gray);
+            font-size: 14px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            border-bottom: 2px solid transparent;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        .nav-link:hover {
+            color: var(--text-dark);
+        }
+
+        .nav-link.active {
+            color: var(--primary);
+            border-bottom: 2px solid var(--primary);
+        }
+
+        .nav-user {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .bell-icon {
+            width: 36px;
+            height: 36px;
+            background: #f3f4f6;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.3em;
-            margin: 0 10px;
+            color: var(--text-gray);
+            cursor: pointer;
         }
 
-        .message.user .message-icon {
-            background: #667eea;
-            order: 2;
+        .user-text {
+            text-align: right;
         }
 
-        .message.assistant .message-icon {
-            background: #11998e;
+        .user-name {
+            font-size: 14px;
+            font-weight: 600;
+            color: #111827;
         }
 
-        .sources {
-            margin-top: 10px;
-            padding-top: 10px;
-            border-top: 1px solid #e0e0e0;
-            font-size: 0.85em;
-            color: #666;
+        .user-id {
+            font-size: 12px;
+            color: var(--text-gray);
         }
 
-        .sources-title {
-            font-weight: bold;
-            margin-bottom: 5px;
-        }
-
-        .source-item {
-            background: #f0f0f0;
-            padding: 5px 10px;
-            border-radius: 5px;
-            margin-top: 5px;
-            font-size: 0.9em;
-        }
-
-        .input-area {
-            padding: 20px;
-            background: white;
-            border-top: 2px solid #e0e0e0;
-        }
-
-        .input-wrapper {
+        .user-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            background: #fed7aa;
             display: flex;
-            gap: 10px;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            color: #9a3412;
+            cursor: pointer;
         }
 
-        .input-field {
+        /* --- App Container & Views --- */
+        .app-container {
+            display: flex;
             flex: 1;
-            padding: 15px 20px;
-            border: 2px solid #e0e0e0;
-            border-radius: 50px;
-            font-size: 1em;
+            opacity: 0;
+            overflow: hidden;
+            transition: opacity 0.3s;
+        }
+
+        /* Tab functionality */
+        .view-panel {
+            display: none;
+            flex: 1;
+            overflow-y: auto;
+            background: var(--bg-color);
+        }
+
+        .view-panel.active-view {
+            display: flex;
+        }
+
+        /* --- Dashboard View Styles --- */
+        #dashboardView {
+            flex-direction: column;
+            padding: 40px;
+            background: #f3f4f6;
+        }
+
+        .dash-header {
+            margin-bottom: 30px;
+        }
+
+        .dash-header h2 {
+            font-size: 28px;
+            font-weight: 700;
+            color: #111827;
+        }
+
+        .dash-header p {
+            color: var(--text-gray);
+            margin-top: 5px;
+        }
+
+        .dash-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 24px;
+        }
+
+        .dash-card {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            border: 1px solid var(--border-color);
+        }
+
+        .card-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: #9ca3af;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .stat-huge {
+            font-size: 36px;
+            font-weight: 700;
+            color: #111827;
+            margin-bottom: 8px;
+        }
+
+        .stat-sub {
+            font-size: 14px;
+            color: var(--text-gray);
+        }
+
+        .timeline-item {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 16px;
+            position: relative;
+        }
+
+        .timeline-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: #eff6ff;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2;
+            flex-shrink: 0;
+        }
+
+        .timeline-content h4 {
+            font-size: 14px;
+            color: #111827;
+        }
+
+        .timeline-content p {
+            font-size: 13px;
+            color: var(--text-gray);
+            margin-top: 4px;
+        }
+
+        .dash-weather {
+            background: linear-gradient(135deg, #2563eb, #1d4ed8);
+            color: white;
+        }
+
+        .dash-weather .card-title {
+            color: #bfdbfe;
+        }
+
+        .dash-weather .stat-huge {
+            color: white;
+        }
+
+        .dash-weather .stat-sub {
+            color: #e0e7ff;
+        }
+
+        /* --- Knowledge Base View Styles --- */
+        #knowledgeView {
+            padding: 40px;
+        }
+
+        .kb-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .kb-search {
+            padding: 12px 20px;
+            border-radius: 100px;
+            border: 1px solid var(--border-color);
+            width: 300px;
             outline: none;
-            transition: border-color 0.3s;
+            font-size: 14px;
         }
 
-        .input-field:focus {
-            border-color: #11998e;
+        .kb-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 24px;
         }
 
-        .send-btn {
-            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        .kb-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid var(--border-color);
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .kb-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+
+        .kb-card .icon {
+            font-size: 24px;
+            margin-bottom: 16px;
+        }
+
+        .kb-card h3 {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .kb-card p {
+            font-size: 13px;
+            color: var(--text-gray);
+            line-height: 1.5;
+        }
+
+        /* --- Support View Styles --- */
+        #supportView {
+            padding: 40px;
+            gap: 40px;
+        }
+
+        .faq-section {
+            flex: 2;
+        }
+
+        .contact-section {
+            flex: 1;
+        }
+
+        .accordion {
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+
+        .acc-header {
+            padding: 16px 20px;
+            background: #f9fafb;
+            font-weight: 600;
+            font-size: 15px;
+            cursor: pointer;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .acc-body {
+            padding: 16px 20px;
+            font-size: 14px;
+            color: var(--text-gray);
+            line-height: 1.6;
+        }
+
+        .contact-card {
+            background: white;
+            padding: 24px;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .contact-card h3 {
+            font-size: 20px;
+            color: var(--primary);
+            margin: 12px 0;
+        }
+
+        /* --- Advisor View (Left Sidebar, Chat, Right Panel) --- */
+        #advisorView {
+            display: none;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        #advisorView.active-view {
+            display: flex;
+        }
+
+        .sidebar {
+            width: 280px;
+            background: var(--sidebar-bg);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            padding: 24px 20px;
+            overflow-y: auto;
+            flex-shrink: 0;
+        }
+
+        .new-chat-btn {
+            background: var(--primary);
             color: white;
             border: none;
-            padding: 15px 30px;
-            border-radius: 50px;
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
             cursor: pointer;
-            font-size: 1em;
+            margin-bottom: 30px;
+            transition: background 0.2s;
+        }
+
+        .new-chat-btn:hover {
+            background: var(--primary-hover);
+        }
+
+        .sidebar-section {
+            margin-bottom: 24px;
+        }
+
+        .sidebar-title {
+            font-size: 11px;
+            font-weight: 700;
+            color: #9ca3af;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 12px;
+        }
+
+        .sidebar-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 12px;
+            border-radius: 8px;
+            font-size: 13px;
+            color: var(--text-dark);
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s;
+            margin-bottom: 4px;
+        }
+
+        .sidebar-item:hover {
+            background: #f3f4f6;
+        }
+
+        .sidebar-item.active {
+            background: #eff6ff;
+            color: var(--primary);
+        }
+
+        .item-icon {
+            color: #9ca3af;
+            font-size: 16px;
+        }
+
+        .sidebar-item.active .item-icon {
+            color: var(--primary);
+        }
+
+        .pro-tip {
+            margin-top: auto;
+            background: #f9fafb;
+            border-radius: 12px;
+            padding: 16px;
+        }
+
+        .pro-tip-title {
+            font-size: 12px;
+            font-weight: 700;
+            color: #111827;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .pro-tip-text {
+            font-size: 12px;
+            color: var(--text-gray);
+            line-height: 1.5;
+        }
+
+        .chat-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: var(--bg-color);
+            position: relative;
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 30px 40px;
+        }
+
+        .message {
+            display: flex;
+            margin-bottom: 24px;
+            gap: 16px;
+            max-width: 85%;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message.bot {
+            align-self: flex-start;
+        }
+
+        .message.user {
+            align-self: flex-end;
+            margin-left: auto;
+            flex-direction: row-reverse;
+        }
+
+        .avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .bot .avatar {
+            background: var(--primary);
+            color: white;
+            font-size: 18px;
+        }
+
+        .user .avatar {
+            background: #e5e7eb;
+            color: var(--text-gray);
+            font-size: 14px;
             font-weight: bold;
-            transition: transform 0.2s;
         }
 
-        .send-btn:hover:not(:disabled) {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(17, 153, 142, 0.3);
+        .bubble-wrapper {
+            display: flex;
+            flex-direction: column;
         }
 
-        .send-btn:disabled {
-            opacity: 0.5;
+        .user .bubble-wrapper {
+            align-items: flex-end;
+        }
+
+        .bubble {
+            padding: 16px 20px;
+            border-radius: 16px;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .bot .bubble {
+            background: var(--bot-bubble);
+            color: var(--text-dark);
+            border: 1px solid var(--border-color);
+            border-top-left-radius: 4px;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+        }
+
+        .user .bubble {
+            background: var(--user-bubble);
+            color: white;
+            border-top-right-radius: 4px;
+        }
+
+        .message-time {
+            font-size: 11px;
+            color: #9ca3af;
+            margin-top: 6px;
+            text-transform: uppercase;
+        }
+
+        .suggestion-chips {
+            display: flex;
+            gap: 10px;
+            margin-top: 16px;
+            flex-wrap: wrap;
+        }
+
+        .chip {
+            background: #eff6ff;
+            color: var(--primary);
+            border: 1px solid #bfdbfe;
+            border-radius: 100px;
+            padding: 8px 16px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .chip:hover {
+            background: #dbeafe;
+        }
+
+        .sample-questions-container {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .sample-chip {
+            background: #ffffff;
+            color: #0d9488;
+            border: 1px solid #0d9488;
+            border-radius: 100px;
+            padding: 8px 16px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .sample-chip:hover {
+            background: #f0fdfa;
+        }
+
+        .chat-input-container {
+            padding: 24px 40px;
+            background: transparent;
+        }
+
+        .input-bar {
+            display: flex;
+            align-items: center;
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 8px 16px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        }
+
+        .input-bar input {
+            flex: 1;
+            border: none;
+            outline: none;
+            padding: 12px 8px;
+            font-size: 14px;
+            color: var(--text-dark);
+            background: transparent;
+        }
+
+        .input-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .action-icon {
+            color: var(--text-gray);
+            cursor: pointer;
+            font-size: 18px;
+        }
+
+        .action-icon:hover {
+            color: var(--text-dark);
+        }
+
+        .send-pill {
+            background: var(--primary);
+            color: white;
+            border: none;
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .send-pill:disabled {
+            background: #93c5fd;
             cursor: not-allowed;
         }
 
-        .typing-indicator {
-            display: none;
-            padding: 15px 20px;
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            max-width: 70%;
+        .send-pill:hover:not(:disabled) {
+            background: var(--primary-hover);
         }
 
-        .typing-indicator.active {
-            display: block;
+        .right-panel {
+            width: 320px;
+            background: var(--right-panel-bg);
+            border-left: 1px solid var(--border-color);
+            padding: 24px;
+            overflow-y: auto;
+            flex-shrink: 0;
         }
 
-        .dot {
-            display: inline-block;
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: #11998e;
-            margin: 0 2px;
-            animation: bounce 1.4s infinite ease-in-out both;
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
         }
 
-        .dot:nth-child(1) { animation-delay: -0.32s; }
-        .dot:nth-child(2) { animation-delay: -0.16s; }
-
-        @keyframes bounce {
-            0%, 80%, 100% { transform: scale(0); }
-            40% { transform: scale(1); }
+        .panel-header h2 {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text-dark);
         }
 
-        .sample-questions {
+        .scheme-card {
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
             padding: 20px;
-            background: #f8f9fa;
-        }
-
-        .sample-questions h3 {
-            color: #333;
-            margin-bottom: 15px;
-        }
-
-        .sample-btn {
-            display: inline-block;
-            padding: 10px 15px;
-            margin: 5px;
+            margin-bottom: 20px;
             background: white;
-            border: 2px solid #11998e;
-            color: #11998e;
-            border-radius: 20px;
-            cursor: pointer;
-            transition: all 0.3s;
-            font-size: 0.9em;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
         }
 
-        .sample-btn:hover {
-            background: #11998e;
+        .scheme-card-header {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+            align-items: flex-start;
+        }
+
+        .scheme-icon {
+            width: 40px;
+            height: 40px;
+            background: var(--primary);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            flex-shrink: 0;
+        }
+
+        .scheme-icon.secondary {
+            background: #f3f4f6;
+            color: #4b5563;
+        }
+
+        .scheme-title h3 {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text-dark);
+            margin-bottom: 4px;
+        }
+
+        .scheme-title p {
+            font-size: 12px;
+            color: var(--text-gray);
+        }
+
+        .scheme-meta {
+            margin-bottom: 20px;
+        }
+
+        .meta-label {
+            font-size: 10px;
+            font-weight: 700;
+            color: #9ca3af;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 6px;
+        }
+
+        .meta-value {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--primary);
+            display: flex;
+            align-items: baseline;
+            gap: 6px;
+        }
+
+        .meta-value span {
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--text-gray);
+        }
+
+        .meta-value.text {
+            font-size: 13px;
+            color: var(--text-dark);
+            font-weight: 500;
+            line-height: 1.5;
+        }
+
+        .badge-success {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: var(--success-green);
+            color: var(--success-text);
+            padding: 4px 10px;
+            border-radius: 100px;
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        .checklist {
+            list-style: none;
+            margin-bottom: 20px;
+        }
+
+        .checklist li {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            color: var(--text-dark);
+            margin-bottom: 8px;
+        }
+
+        .checklist li::before {
+            content: '✓';
+            color: var(--primary);
+            font-weight: bold;
+        }
+
+        .btn-full {
+            width: 100%;
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            display: block;
+            text-align: center;
+        }
+
+        .btn-outline {
+            width: 100%;
+            background: white;
+            color: var(--primary);
+            border: 1px solid var(--primary);
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .deadline-card {
+            background: var(--warning-bg);
+            border-radius: 12px;
+            padding: 16px;
+            color: white;
+            margin-top: 30px;
+        }
+
+        .deadline-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 700;
+            font-size: 14px;
+            margin-bottom: 16px;
             color: white;
         }
 
-        .empty-state {
-            text-align: center;
-            padding: 50px 20px;
-            color: #999;
+        .deadline-item {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            margin-bottom: 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 12px;
         }
 
-        .empty-state-icon {
-            font-size: 4em;
-            margin-bottom: 20px;
+        .deadline-item:last-child {
+            border: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+
+        .deadline-label {
+            color: #d1d5db;
+        }
+
+        .deadline-date {
+            color: var(--warning-text);
+            font-weight: 600;
+        }
+
+        .deadline-date.success {
+            color: #4ade80;
+        }
+
+        .typing-dot {
+            display: inline-block;
+            width: 6px;
+            height: 6px;
+            background: #9ca3af;
+            border-radius: 50%;
+            margin: 0 2px;
+            animation: bounce 1.4s infinite ease-in-out;
+        }
+
+        .typing-dot:nth-child(1) {
+            animation-delay: -0.32s;
+        }
+
+        .typing-dot:nth-child(2) {
+            animation-delay: -0.16s;
+        }
+
+        @keyframes bounce {
+
+            0%,
+            80%,
+            100% {
+                transform: scale(0);
+            }
+
+            40% {
+                transform: scale(1);
+            }
+        }
+
+        .password-wrapper {
+            position: relative;
+            width: 100%;
+        }
+
+        .password-toggle {
+            position: absolute;
+            right: 12px;
+            top: 12px;
+            cursor: pointer;
+            font-size: 16px;
+            user-select: none;
         }
     </style>
 </head>
+
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>💬 Government Scheme Advisor</h1>
-            <p>Ask me about agricultural schemes, eligibility, and benefits</p>
-        </div>
 
-        <div class="chat-container" id="chatContainer">
-            <div class="empty-state" id="emptyState">
-                <div class="empty-state-icon">🌾</div>
-                <h2>Welcome to Scheme Advisor!</h2>
-                <p>Ask any question about government agricultural schemes</p>
+    <!-- Auth Overlay -->
+    <div id="loginOverlay">
+        <div class="login-box">
+            <h2 id="authTitle" style="margin-bottom: 10px;">Welcome Back</h2>
+            <p id="authSubtitle" style="font-size: 14px; color: #6b7280; margin-bottom: 24px;">Access your personalized
+                agriculture advisor</p>
+            <div class="auth-error" id="authError"></div>
+
+            <input type="text" id="usernameInput" class="login-input" placeholder="Username"
+                onkeypress="handleLoginKeyPress(event)" autocomplete="off">
+            <div class="password-wrapper">
+                <input type="password" id="passwordInput" class="login-input" placeholder="Password"
+                    onkeypress="handleLoginKeyPress(event)" style="padding-right: 40px; margin-bottom: 15px;">
+                <span class="password-toggle" id="togglePasswordBtn" onclick="togglePasswordVisibility()"
+                    title="Toggle Password">👁️</span>
             </div>
-        </div>
 
-        <div class="sample-questions" id="sampleQuestions">
-            <h3>💡 Try asking:</h3>
-            <button class="sample-btn" onclick="askQuestion('What is PM-KISAN scheme?')">
-                What is PM-KISAN scheme?
-            </button>
-            <button class="sample-btn" onclick="askQuestion('How do I apply for crop insurance?')">
-                How do I apply for crop insurance?
-            </button>
-            <button class="sample-btn" onclick="askQuestion('What is Soil Health Card?')">
-                What is Soil Health Card?
-            </button>
-            <button class="sample-btn" onclick="askQuestion('Kisan Credit Card eligibility')">
-                Kisan Credit Card eligibility
-            </button>
-        </div>
-
-        <div class="input-area">
-            <div class="input-wrapper">
-                <input 
-                    type="text" 
-                    class="input-field" 
-                    id="questionInput" 
-                    placeholder="Ask about schemes, eligibility, benefits..."
-                    onkeypress="handleKeyPress(event)"
-                >
-                <button class="send-btn" id="sendBtn" onclick="sendQuestion()">
-                    Send
-                </button>
+            <button class="login-btn" id="authSubmitBtn" onclick="submitAuth()">Login</button>
+            <div class="auth-toggle" onclick="toggleAuthMode()" id="authToggleText">Don't have an account? Register here
             </div>
         </div>
     </div>
 
+    <!-- Top Navbar -->
+    <nav class="navbar">
+        <div class="nav-logo">
+            <div class="logo-icon">🤖</div>
+            <div class="nav-logo-text">
+                <h1>Scheme Advisor AI</h1>
+                <p>Agricultural Intelligence Hub</p>
+            </div>
+        </div>
+
+        <div class="nav-links">
+            <div class="nav-link" id="nav-dashboard" onclick="switchTab('dashboard')">Dashboard</div>
+            <div class="nav-link active" id="nav-advisor" onclick="switchTab('advisor')">Advisor</div>
+            <div class="nav-link" id="nav-knowledge" onclick="switchTab('knowledge')">Knowledge Base</div>
+            <div class="nav-link" id="nav-support" onclick="switchTab('support')">Support</div>
+        </div>
+
+        <div class="nav-user">
+            <div class="bell-icon">🔔</div>
+            <div class="user-text">
+                <div class="user-name" id="displayUsername">Loading...</div>
+                <div class="user-id">Farmer ID: <span id="displayUserId">---</span></div>
+            </div>
+            <div class="user-avatar" id="userInitials" onclick="logout()" title="Click to logout">U</div>
+        </div>
+    </nav>
+
+    <!-- App Container -->
+    <div class="app-container" id="appContainer">
+
+        <!-- 1. DASHBOARD TAB -->
+        <div id="dashboardView" class="view-panel">
+            <div class="dash-header">
+                <h2>Welcome Back, <span id="dashWelcomeName">Farmer</span>! 🌾</h2>
+                <p>Here is your daily agricultural overview.</p>
+            </div>
+
+            <div class="dash-grid">
+                <!-- Weather / Advisory Card -->
+                <div class="dash-card dash-weather">
+                    <div class="card-title"><span>🌤️</span> Local Weather Advisory</div>
+                    <div class="stat-huge">28°C</div>
+                    <div class="stat-sub">Partly cloudy. Gentle breeze (12 km/h).</div>
+                    <br>
+                    <div style="background: rgba(255,255,255,0.1); padding: 12px; border-radius: 8px; font-size: 13px;">
+                        <strong>AI Note:</strong> Ideal weather for applying top-dressing fertilizer to your wheat crop
+                        today.
+                    </div>
+                </div>
+
+                <!-- Scheme Status Card -->
+                <div class="dash-card">
+                    <div class="card-title"><span>📋</span> Active Applications</div>
+
+                    <div class="timeline-item">
+                        <div class="timeline-icon">✓</div>
+                        <div class="timeline-content">
+                            <h4>PM-Kisan Samman Nidhi</h4>
+                            <p>KYC Verified. Next installment processing.</p>
+                        </div>
+                    </div>
+
+                    <div class="timeline-item">
+                        <div class="timeline-icon" style="background:#fefce8; color:#eab308;">⏳</div>
+                        <div class="timeline-content">
+                            <h4>Fasal Bima Yojana</h4>
+                            <p>Application under review by local authority.</p>
+                        </div>
+                    </div>
+
+                    <button class="btn-outline" style="margin-top: 10px;" onclick="switchTab('knowledge')">Browse More
+                        Schemes</button>
+                </div>
+
+                <!-- Market Rates Card -->
+                <div class="dash-card">
+                    <div class="card-title"><span>📈</span> Mandi Rates (Wheat)</div>
+                    <div class="stat-huge">₹2,275 <span style="font-size: 14px; color: #166534;">+₹25</span></div>
+                    <div class="stat-sub">Minimum Support Price achieved at nearest Mandi.</div>
+                    <ul class="checklist" style="margin-top: 20px;">
+                        <li style="justify-content: space-between;"><span>Delhi Azadpur</span> <span>₹2,300</span></li>
+                        <li style="justify-content: space-between;"><span>Karnal Mandi</span> <span>₹2,275</span></li>
+                        <li style="justify-content: space-between;"><span>Amritsar</span> <span>₹2,260</span></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. KNOWLEDGE BASE TAB -->
+        <div id="knowledgeView" class="view-panel">
+            <div class="kb-header">
+                <div>
+                    <h2 style="font-size: 24px; margin-bottom: 5px;">Scheme Directory</h2>
+                    <p style="color: var(--text-gray); font-size: 14px;">Browse all available central and state
+                        government subsidies.</p>
+                </div>
+                <input type="text" class="kb-search" placeholder="Search schemes, e.g. 'Tractor loan'...">
+            </div>
+
+            <div class="kb-grid">
+                <a href="https://pmkisan.gov.in/" target="_blank" class="kb-card">
+                    <div class="icon">🌾</div>
+                    <h3>PM-Kisan Samman Nidhi</h3>
+                    <p>Financial assistance of ₹6000 per year to small and marginal farmer families.</p>
+                </a>
+                <a href="https://pmfby.gov.in/" target="_blank" class="kb-card">
+                    <div class="icon">🛡️</div>
+                    <h3>Pradhan Mantri Fasal Bima</h3>
+                    <p>Comprehensive crop insurance scheme from pre-sowing to post-harvest losses.</p>
+                </a>
+                <a href="https://www.myscheme.gov.in/schemes/kcc" target="_blank" class="kb-card">
+                    <div class="icon">💳</div>
+                    <h3>Kisan Credit Card (KCC)</h3>
+                    <p>Adequate and timely credit support from banking system under a single window.</p>
+                </a>
+                <a href="http://pmksy.gov.in/" target="_blank" class="kb-card">
+                    <div class="icon">💧</div>
+                    <h3>PM Krishi Sinchayee Yojana</h3>
+                    <p>Focuses on improving water use efficiency at farm level (Per Drop More Crop).</p>
+                </a>
+                <a href="https://agrimachinery.nic.in/index/index" target="_blank" class="kb-card">
+                    <div class="icon">🚜</div>
+                    <h3>SMAM Subsidy</h3>
+                    <p>Sub-Mission on Agricultural Mechanization. Get subsidies for buying tractors and equipment.</p>
+                </a>
+                <a href="https://www.soilhealth.dac.gov.in/home" target="_blank" class="kb-card">
+                    <div class="icon">🧪</div>
+                    <h3>Soil Health Card</h3>
+                    <p>Get information on the nutrient status of your soil along with recommendation on dosage.</p>
+                </a>
+            </div>
+        </div>
+
+        <!-- 3. SUPPORT TAB -->
+        <div id="supportView" class="view-panel">
+            <div class="faq-section">
+                <h2 style="font-size: 24px; margin-bottom: 24px;">Frequently Asked Questions</h2>
+
+                <div class="accordion">
+                    <div class="acc-header">How do I access my PM-Kisan installments?</div>
+                    <div class="acc-body">Your Aadhaar card must be linked to an active bank account. The funds are
+                        directly transferred via DBT (Direct Benefit Transfer). You can check your status on the
+                        official portal.</div>
+                </div>
+                <div class="accordion">
+                    <div class="acc-header">Is this AI Advisor affiliated with the Government?</div>
+                    <div class="acc-body">This tool uses official government data to assist you, but it is an
+                        independent AI technology platform built to make information more accessible.</div>
+                </div>
+                <div class="accordion">
+                    <div class="acc-header">How do I update my registered mobile number?</div>
+                    <div class="acc-body">You can update your PM-Kisan mobile number through the CSC (Common Service
+                        Centres) or by logging into the official portal with your Aadhaar OTP.</div>
+                </div>
+            </div>
+
+            <div class="contact-section">
+                <div class="contact-card">
+                    <div style="font-size: 40px; margin-bottom: 10px;">📞</div>
+                    <h2>Kisan Call Center</h2>
+                    <h3>1800-180-1551</h3>
+                    <p style="font-size: 13px; color: var(--text-gray); margin-bottom: 20px;">Toll free number available
+                        from 6:00 AM to 10:00 PM on all 365 days.</p>
+                    <button class="btn-full">Call Now</button>
+                </div>
+
+                <div class="contact-card">
+                    <div style="font-size: 40px; margin-bottom: 10px;">🏛️</div>
+                    <h2>File a Grievance</h2>
+                    <p style="font-size: 13px; color: var(--text-gray); margin-bottom: 20px;">Not receiving your
+                        approved funds? Register a complaint with the ministry.</p>
+                    <a href="https://pgportal.gov.in/" target="_blank" style="text-decoration:none;">
+                        <button class="btn-outline">Open PGPortaL</button>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. ADVISOR TAB (The existing chat interface and history sidebar) -->
+        <div id="advisorView" class="view-panel active-view">
+            <!-- Left Sidebar (Chat History) -->
+            <aside class="sidebar">
+                <button class="new-chat-btn" onclick="startNewChat()">
+                    <span>+</span> New Consultation
+                </button>
+
+                <div class="sidebar-section">
+                    <div class="sidebar-title">Recent Chats</div>
+                    <div id="sidebarHistoryList">
+                        <!-- History injected here by JS -->
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Center Chat Area -->
+            <main class="chat-area">
+                <div class="chat-messages" id="chatContainer">
+                    <!-- Initial Bot Message -->
+                    <div class="message bot">
+                        <div class="avatar">🤖</div>
+                        <div class="bubble-wrapper">
+                            <div class="bubble" id="welcomeMsg">
+                                Hello Rajesh! I can help you find government schemes tailored for your farm.<br><br>To
+                                get started, what is your land
+                                size and primary crop for this season?
+                            </div>
+                            <div class="message-time">ADVISOR BOT • 10:30 AM</div>
+                        </div>
+                    </div>
+
+                    <div class="message user">
+                        <div class="avatar">U</div>
+                        <div class="bubble-wrapper">
+                            <div class="bubble">
+                                I have 2.5 hectares of land and I grow Wheat. Am I eligible for PM-Kisan or any crop
+                                insurance?
+                            </div>
+                            <div class="message-time">YOU • 10:31 AM</div>
+                        </div>
+                    </div>
+
+                    <div class="message bot">
+                        <div class="avatar">🤖</div>
+                        <div class="bubble-wrapper">
+                            <div class="bubble">
+                                Great! With 2.5 hectares (approx. 6 acres), you fall into the Small & Marginal Farmer
+                                category.<br><br>Yes, you are <strong>fully eligible</strong> for the <span
+                                    style="color:var(--primary);cursor:pointer;font-weight:600;"
+                                    onclick="switchTab('knowledge')">PM-Kisan Samman Nidhi</span> scheme. You are also
+                                eligible for the <span style="color:var(--primary);cursor:pointer;font-weight:600;"
+                                    onclick="switchTab('knowledge')">Pradhan Mantri Fasal Bima Yojana (PMFBY)</span> for
+                                your wheat crop.<br><br>Would you like to know about the application process?
+                                <div class="suggestion-chips">
+                                    <div class="chip" onclick="askQuestion('How to apply?')">How to apply?</div>
+                                    <div class="chip" onclick="askQuestion('Required documents?')">Required documents?
+                                    </div>
+                                    <div class="chip" onclick="askQuestion('Payment status')">Payment status</div>
+                                </div>
+                            </div>
+                            <div class="message-time">ADVISOR BOT • 10:32 AM</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="chat-input-container">
+                    <div class="sample-questions-container" id="sampleQuestions">
+                        <div class="sample-chip" onclick="askQuestion('What is PM-KISAN scheme?')">What is PM-KISAN
+                            scheme?</div>
+                        <div class="sample-chip" onclick="askQuestion('How do I apply for crop insurance?')">How do I
+                            apply for crop insurance?</div>
+                        <div class="sample-chip" onclick="askQuestion('What is Soil Health Card?')">What is Soil Health
+                            Card?</div>
+                        <div class="sample-chip" onclick="askQuestion('Kisan Credit Card eligibility')">Kisan Credit
+                            Card eligibility</div>
+                    </div>
+                    <div class="input-bar">
+                        <input type="text" id="questionInput"
+                            placeholder="Ask about schemes, subsidies, or crop advice..."
+                            onkeypress="handleKeyPress(event)" autocomplete="off">
+                        <div class="input-actions">
+                            <span class="action-icon">🎤</span>
+                            <span class="action-icon">📎</span>
+                            <button class="send-pill" id="sendBtn" onclick="sendQuestion()" disabled>➤</button>
+                        </div>
+                    </div>
+                    <div
+                        style="text-align: center; margin-top: 12px; font-size: 11px; color: #9ca3af; display: flex; justify-content: center; gap: 20px;">
+                        <span>A English / Hindi Supported</span>
+                        <span>✓ Official GOI Data</span>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
     <script>
+        // --- Setup & DOM ---
+        const loginOverlay = document.getElementById('loginOverlay');
+        const appContainer = document.getElementById('appContainer');
+        const usernameInput = document.getElementById('usernameInput');
+        const passwordInput = document.getElementById('passwordInput');
+
+        const authTitle = document.getElementById('authTitle');
+        const authSubtitle = document.getElementById('authSubtitle');
+        const authSubmitBtn = document.getElementById('authSubmitBtn');
+        const authToggleText = document.getElementById('authToggleText');
+        const authError = document.getElementById('authError');
+
+        const displayUsername = document.getElementById('displayUsername');
+        const dashWelcomeName = document.getElementById('dashWelcomeName');
+        const displayUserId = document.getElementById('displayUserId');
+        const userInitials = document.getElementById('userInitials');
+        const welcomeMsg = document.getElementById('welcomeMsg');
+
         const chatContainer = document.getElementById('chatContainer');
         const questionInput = document.getElementById('questionInput');
         const sendBtn = document.getElementById('sendBtn');
-        const emptyState = document.getElementById('emptyState');
-        const sampleQuestions = document.getElementById('sampleQuestions');
+        const sidebarHistoryList = document.getElementById('sidebarHistoryList');
 
-        function handleKeyPress(event) {
-            if (event.key === 'Enter') {
-                sendQuestion();
+        let currentUser = null;
+        let isLoginMode = true;
+
+        // --- Single Page Application Routing (Tabs) ---
+        function switchTab(tabId) {
+            // Remove active classes
+            document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
+            document.querySelectorAll('.view-panel').forEach(panel => panel.classList.remove('active-view'));
+
+            // Add active classes to targeted elements
+            document.getElementById(`nav-${tabId}`).classList.add('active');
+            document.getElementById(`${tabId}View`).classList.add('active-view');
+        }
+
+        // --- Auth Logic ---
+        function toggleAuthMode() {
+            isLoginMode = !isLoginMode;
+            authError.style.display = 'none';
+            if (isLoginMode) {
+                authTitle.textContent = "Welcome Back"; authSubtitle.textContent = "Access your personalized agriculture advisor";
+                authSubmitBtn.textContent = "Login"; authToggleText.textContent = "Don't have an account? Register here";
+            } else {
+                authTitle.textContent = "Create Account"; authSubtitle.textContent = "Join to save your scheme advice history";
+                authSubmitBtn.textContent = "Register"; authToggleText.textContent = "Already have an account? Login here";
             }
         }
 
-        function askQuestion(question) {
-            questionInput.value = question;
-            sendQuestion();
+        function checkLogin() {
+            const storedUser = localStorage.getItem('schemeAdvisorUserObj');
+            if (storedUser) { currentUser = JSON.parse(storedUser); showApp(); }
+        }
+
+        function handleLoginKeyPress(e) { if (e.key === 'Enter') submitAuth(); }
+
+        async function submitAuth() {
+            const username = usernameInput.value.trim();
+            const password = passwordInput.value.trim();
+            if (!username || !password) { authError.textContent = "Please enter both username and password."; authError.style.display = 'block'; return; }
+
+            authSubmitBtn.textContent = "Please wait..."; authSubmitBtn.disabled = true;
+            const endpoint = isLoginMode ? '/login' : '/register';
+
+            try {
+                const response = await fetch(`http://127.0.0.1:5000${endpoint}`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    currentUser = data.user;
+                    localStorage.setItem('schemeAdvisorUserObj', JSON.stringify(currentUser));
+                    showApp();
+                } else {
+                    authError.textContent = data.error || "Authentication failed."; authError.style.display = 'block';
+                }
+            } catch (err) {
+                authError.textContent = "Server unreachable. Please verify backend is running."; authError.style.display = 'block';
+            } finally {
+                authSubmitBtn.textContent = isLoginMode ? "Login" : "Register"; authSubmitBtn.disabled = false;
+            }
+        }
+
+        function logout() {
+            if (!confirm("Are you sure you want to log out?")) return;
+            localStorage.removeItem('schemeAdvisorUserObj'); currentUser = null;
+            appContainer.style.opacity = '0';
+            setTimeout(() => {
+                loginOverlay.style.visibility = 'visible'; loginOverlay.style.opacity = '1';
+                passwordInput.value = ''; switchTab('advisor'); // Reset to default view for next user
+                startNewChat();
+            }, 300);
+        }
+
+        function showApp() {
+            const firstName = currentUser.username.split(' ')[0];
+            displayUsername.textContent = currentUser.username;
+            dashWelcomeName.textContent = firstName;
+            displayUserId.textContent = "4829" + currentUser.id;
+            userInitials.textContent = currentUser.username.charAt(0).toUpperCase();
+
+            let htmlText = welcomeMsg.innerHTML;
+            welcomeMsg.innerHTML = htmlText.replace("Hello Rajesh!", `Hello ${firstName}!`);
+
+            loginOverlay.style.opacity = '0';
+            setTimeout(() => {
+                loginOverlay.style.visibility = 'hidden';
+                appContainer.style.opacity = '1';
+                loadChatHistory();
+                updateSidebarHistory();
+                switchTab('dashboard'); // Default root tab upon logging in!
+            }, 400);
+        }
+
+        // --- Chat Logic ---
+        questionInput.addEventListener('input', function () { sendBtn.disabled = this.value.trim() === ''; });
+
+        function handleKeyPress(e) { if (e.key === 'Enter' && !sendBtn.disabled) sendQuestion(); }
+
+        function askQuestion(q) { questionInput.value = q; sendBtn.disabled = false; sendQuestion(); }
+
+        function startNewChat() {
+            const msgs = Array.from(chatContainer.children);
+            msgs.forEach((msg, idx) => { if (idx > 0) msg.remove(); });
+            localStorage.removeItem('chatHistory');
+            updateSidebarHistory();
+        }
+
+        function getFormattedTime() {
+            const now = new Date();
+            let hours = now.getHours(); let ampm = hours >= 12 ? 'PM' : 'AM';
+            hours = hours % 12; hours = hours ? hours : 12;
+            let minutes = now.getMinutes() < 10 ? '0' + now.getMinutes() : now.getMinutes();
+            return `${hours}:${minutes} ${ampm}`;
         }
 
         async function sendQuestion() {
             const question = questionInput.value.trim();
-            
             if (!question) return;
 
-            // Hide empty state and samples
-            emptyState.style.display = 'none';
-            sampleQuestions.style.display = 'none';
+            addMessage('user', question, null, true, question);
+            questionInput.value = ''; sendBtn.disabled = true;
 
-            // Add user message
-            addMessage('user', question);
-
-            // Clear input and disable button
-            questionInput.value = '';
-            sendBtn.disabled = true;
-
-            // Show typing indicator
             const typingIndicator = showTypingIndicator();
 
             try {
                 const response = await fetch('http://127.0.0.1:5000/ask', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ question })
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ question, user_id: currentUser ? currentUser.id : null })
                 });
-
                 const data = await response.json();
-
-                // Remove typing indicator
                 typingIndicator.remove();
 
                 if (data.success) {
-                    addMessage('assistant', data.answer, data.sources);
-                } else {
-                    addMessage('assistant', `Error: ${data.error}`);
-                }
+                    addMessage('bot', data.answer, data.sources, true, question);
+                    if (data.answer.toLowerCase().includes("pm-kisan") || data.answer.toLowerCase().includes("apply")) {
+                        appendChipsToLastBotMessage(['How to apply?', 'Required documents?', 'Payment status']);
+                    }
+                } else { addMessage('bot', `Error: ${data.error}`); }
             } catch (error) {
                 typingIndicator.remove();
-                addMessage('assistant', 'Failed to connect to server. Make sure the Flask API is running on port 5000.');
-            } finally {
-                sendBtn.disabled = false;
-                questionInput.focus();
-            }
+                addMessage('bot', 'Failed to connect to the server. Please ensure the backend is running.');
+            } finally { questionInput.focus(); updateSidebarHistory(); }
         }
 
-        function addMessage(type, content, sources = null) {
-            const messageDiv = document.createElement('div');
-            messageDiv.className = `message ${type}`;
-
-            const icon = document.createElement('div');
-            icon.className = 'message-icon';
-            icon.textContent = type === 'user' ? '👤' : '🤖';
-
-            const contentDiv = document.createElement('div');
-            contentDiv.className = 'message-content';
-            contentDiv.textContent = content;
-
-            // Add sources if available
-            if (sources && sources.length > 0) {
-                const sourcesDiv = document.createElement('div');
-                sourcesDiv.className = 'sources';
-                
-                const sourcesTitle = document.createElement('div');
-                sourcesTitle.className = 'sources-title';
-                sourcesTitle.textContent = '📚 Sources:';
-                sourcesDiv.appendChild(sourcesTitle);
-
-                sources.forEach((source, index) => {
-                    const sourceItem = document.createElement('div');
-                    sourceItem.className = 'source-item';
-                    sourceItem.textContent = `${index + 1}. ${source}`;
-                    sourcesDiv.appendChild(sourceItem);
-                });
-
-                contentDiv.appendChild(sourcesDiv);
+        function addMessage(type, content, sources = null, save = true, originalQuestion = null) {
+            if (save && type === 'bot') {
+                let chatHistory = JSON.parse(localStorage.getItem('chatHistory') || '[]');
+                chatHistory.push({ user: originalQuestion, bot: content });
+                localStorage.setItem('chatHistory', JSON.stringify(chatHistory));
             }
 
-            messageDiv.appendChild(icon);
-            messageDiv.appendChild(contentDiv);
-            chatContainer.appendChild(messageDiv);
+            const msgDiv = document.createElement('div'); msgDiv.className = `message ${type}`;
 
-            // Scroll to bottom
-            chatContainer.scrollTop = chatContainer.scrollHeight;
+            const avatarDiv = document.createElement('div'); avatarDiv.className = 'avatar';
+            avatarDiv.textContent = type === 'user' ? currentUser.username.charAt(0).toUpperCase() : '🤖';
+
+            const wrapDiv = document.createElement('div'); wrapDiv.className = 'bubble-wrapper';
+
+            const bubbleDiv = document.createElement('div'); bubbleDiv.className = 'bubble';
+            bubbleDiv.innerHTML = content.replace(/\n/g, '<br>');
+
+            const timeDiv = document.createElement('div'); timeDiv.className = 'message-time';
+            timeDiv.textContent = `${type === 'user' ? 'YOU' : 'ADVISOR BOT'} • ${getFormattedTime()}`;
+
+            wrapDiv.appendChild(bubbleDiv); wrapDiv.appendChild(timeDiv);
+            msgDiv.appendChild(avatarDiv); msgDiv.appendChild(wrapDiv);
+
+            chatContainer.appendChild(msgDiv); chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        function appendChipsToLastBotMessage(chipTexts) {
+            const allBots = chatContainer.querySelectorAll('.message.bot .bubble');
+            if (allBots.length === 0) return;
+            const lastBotBubble = allBots[allBots.length - 1];
+
+            const chipsDiv = document.createElement('div'); chipsDiv.className = 'suggestion-chips';
+            chipTexts.forEach(txt => {
+                const c = document.createElement('div'); c.className = 'chip'; c.textContent = txt;
+                c.onclick = () => askQuestion(txt);
+                chipsDiv.appendChild(c);
+            });
+            lastBotBubble.appendChild(chipsDiv); chatContainer.scrollTop = chatContainer.scrollHeight;
         }
 
         function showTypingIndicator() {
-            const messageDiv = document.createElement('div');
-            messageDiv.className = 'message assistant';
-
-            const icon = document.createElement('div');
-            icon.className = 'message-icon';
-            icon.textContent = '🤖';
-
-            const typingDiv = document.createElement('div');
-            typingDiv.className = 'typing-indicator active';
-            typingDiv.innerHTML = '<span class="dot"></span><span class="dot"></span><span class="dot"></span>';
-
-            messageDiv.appendChild(icon);
-            messageDiv.appendChild(typingDiv);
-            chatContainer.appendChild(messageDiv);
-
-            chatContainer.scrollTop = chatContainer.scrollHeight;
-
-            return messageDiv;
+            const msgDiv = document.createElement('div'); msgDiv.className = 'message bot';
+            msgDiv.innerHTML = `<div class="avatar">🤖</div><div class="bubble-wrapper"><div class="bubble"><span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span></div></div>`;
+            chatContainer.appendChild(msgDiv); chatContainer.scrollTop = chatContainer.scrollHeight;
+            return msgDiv;
         }
 
-        // Focus input on load
-        questionInput.focus();
+        function loadChatHistory() {
+            let chatHistory = JSON.parse(localStorage.getItem('chatHistory') || '[]');
+            if (chatHistory.length > 0) {
+                chatHistory.forEach(turn => {
+                    if (turn.user) addMessage('user', turn.user, null, false);
+                    if (turn.bot) addMessage('bot', turn.bot, null, false);
+                });
+            }
+        }
+
+        function updateSidebarHistory() {
+            sidebarHistoryList.innerHTML = '';
+            let chatHistory = JSON.parse(localStorage.getItem('chatHistory') || '[]');
+            const recentQs = chatHistory.map(h => h.user).filter(Boolean).reverse().slice(0, 5);
+
+            if (recentQs.length === 0) {
+                sidebarHistoryList.innerHTML = '<div style="color:#9ca3af; font-size: 13px; font-style:italic;">No recent consultations</div>';
+                return;
+            }
+
+            recentQs.forEach((q, i) => {
+                const div = document.createElement('div'); div.className = `sidebar-item ${i === 0 ? 'active' : ''}`;
+                div.innerHTML = `<span class="item-icon">💬</span> ${q.substring(0, 25)}${q.length > 25 ? '...' : ''}`;
+                sidebarHistoryList.appendChild(div);
+            });
+        }
+
+        function togglePasswordVisibility() {
+            const pwdInput = document.getElementById('passwordInput');
+            const toggleBtn = document.getElementById('togglePasswordBtn');
+            if (pwdInput.type === 'password') {
+                pwdInput.type = 'text';
+                toggleBtn.textContent = '🙈';
+            } else {
+                pwdInput.type = 'password';
+                toggleBtn.textContent = '👁️';
+            }
+        }
+
+        // --- Init ---
+        checkLogin();
     </script>
 </body>
+
 </html>
